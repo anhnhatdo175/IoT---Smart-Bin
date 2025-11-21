@@ -164,9 +164,7 @@ This project demonstrates:
 
 MIT License - Free for educational use
 
-## 👤 Author
 
-Created for IoT BTL Project - K67 HUST
 
 ---
 
