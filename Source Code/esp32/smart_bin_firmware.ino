@@ -25,8 +25,8 @@
 #include <ESP32Servo.h>
 
 // ===== WiFi Configuration =====
-const char* WIFI_SSID = "YourWiFiSSID";         // Change this
-const char* WIFI_PASSWORD = "YourWiFiPassword"; // Change this
+const char* WIFI_SSID = "realme";         // Change this
+const char* WIFI_PASSWORD = "12345678"; // Change this
 
 // ===== MQTT Configuration =====
 const char* MQTT_BROKER = "broker.hivemq.com";  // Public HiveMQ broker
@@ -56,7 +56,7 @@ String TOPIC_STATUS = "smartbin/" + String(BIN_ID) + "/status";
 #define RFID_RST_PIN 22
 
 // Servo Motor
-#define SERVO_PIN 18
+#define SERVO_PIN 26
 
 // LED Indicators (optional)
 #define LED_GREEN_PIN 2   // Built-in LED

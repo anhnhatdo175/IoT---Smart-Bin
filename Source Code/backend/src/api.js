@@ -98,9 +98,9 @@ router.get('/bins/:id', async (req, res) => {
 
 /**
  * PUT /api/bins/:id/config
- * Update bin configuration (requires auth)
+ * Update bin configuration (no auth for demo)
  */
-router.put('/bins/:id/config', authenticateToken, async (req, res) => {
+router.put('/bins/:id/config', async (req, res) => {
   try {
     const binId = req.params.id;
     const { mode, threshold_cm, capacity_cm, name, location } = req.body;
@@ -133,7 +133,7 @@ router.put('/bins/:id/config', authenticateToken, async (req, res) => {
 
     // Log the change
     await db.logEvent(binId, 'config_change', {
-      message: `Configuration updated by ${req.user.username}`,
+      message: `Configuration updated`,
       success: true
     });
 
@@ -152,9 +152,9 @@ router.put('/bins/:id/config', authenticateToken, async (req, res) => {
 
 /**
  * POST /api/bins/:id/command
- * Send command to bin (requires auth)
+ * Send command to bin (no auth for demo)
  */
-router.post('/bins/:id/command', authenticateToken, async (req, res) => {
+router.post('/bins/:id/command', async (req, res) => {
   try {
     const binId = req.params.id;
     const { action } = req.body;
@@ -173,13 +173,13 @@ router.post('/bins/:id/command', authenticateToken, async (req, res) => {
     mqttClient.publishCommand(binId, {
       action,
       reason: 'manual_control',
-      user: req.user.username,
+      user: 'admin',
       ts: new Date().toISOString()
     });
 
     // Log the command
     await db.logEvent(binId, action === 'open' ? 'lid_open' : 'lid_close', {
-      message: `Manual ${action} by ${req.user.username}`,
+      message: `Manual ${action}`,
       success: true
     });
 

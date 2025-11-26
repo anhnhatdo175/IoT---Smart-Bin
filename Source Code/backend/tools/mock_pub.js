@@ -9,7 +9,7 @@
 import mqtt from 'mqtt';
 
 // Configuration
-const BROKER_URL = process.env.MQTT_BROKER_URL || 'mqtt://broker.hivemq.com:1883';
+const BROKER_URL = process.env.MQTT_BROKER_URL || 'mqtt://broker.hivemq.com:8884';
 const BIN_ID = process.argv[2] || 'BIN_01';
 const CLIENT_ID = `mock_device_${BIN_ID}_${Math.random().toString(16).slice(2, 8)}`;
 

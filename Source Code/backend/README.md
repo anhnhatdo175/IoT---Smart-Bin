@@ -57,7 +57,7 @@ cp .env.example .env
 
 **Important variables:**
 ```env
-MQTT_BROKER_URL=mqtt://broker.hivemq.com:1883
+MQTT_BROKER_URL=mqtt://broker.hivemq.com:8884
 MYSQL_HOST=localhost
 MYSQL_USER=root
 MYSQL_PASS=yourpassword
@@ -264,7 +264,7 @@ backend/
 
 **MQTT connection fails:**
 - Check internet connection (using public broker)
-- Try alternative: `mqtt://test.mosquitto.org:1883`
+- Try alternative: `mqtt://test.mosquitto.org:8884`
 
 **MySQL connection error:**
 - Verify MySQL is running: `mysql -u root -p`
@@ -312,7 +312,7 @@ ws://broker.hivemq.com:8000/mqtt (for frontend)
 mosquitto -v
 
 # Update .env
-MQTT_BROKER_URL=mqtt://localhost:1883
+MQTT_BROKER_URL=mqtt://localhost:8884
 ```
 
 ## 📝 Sample Test Requests

@@ -5,7 +5,7 @@
 
 import mqtt from 'mqtt';
 
-const BROKER_URL = process.env.REACT_APP_MQTT_URL || 'ws://broker.hivemq.com:8000/mqtt';
+const BROKER_URL = process.env.REACT_APP_MQTT_URL || 'ws://broker.hivemq.com:8884/mqtt';
 const CLIENT_ID = `smartbin_web_${Math.random().toString(16).slice(2, 8)}`;
 
 class MQTTClient {

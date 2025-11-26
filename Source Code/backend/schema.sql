@@ -59,8 +59,8 @@ CREATE TABLE IF NOT EXISTS logs (
 -- Insert sample admin user
 INSERT INTO users (rfid_uid, name, email, role, is_active) VALUES
 ('04A1B2C3D4E5F6', 'Admin User', 'admin@smartbin.local', 'admin', TRUE),
-('A1B2C3D4', 'John Doe', 'john@example.com', 'user', TRUE),
-('E5F6A7B8', 'Jane Smith', 'jane@example.com', 'user', TRUE);
+('43 E8 2B 16', 'John Doe', 'john@example.com', 'user', TRUE),
+('E0 A4 34 5F', 'Jane Smith', 'jane@example.com', 'user', TRUE);
 
 -- Insert sample bin
 INSERT INTO bins (bin_id, name, location, capacity_cm, mode, threshold_cm) VALUES
