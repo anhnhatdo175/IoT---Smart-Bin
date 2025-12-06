@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { updateBinConfig, sendCommand } from '../api';
 import './BinCard.css';
 
-function BinCard({ bin, onSelect, selected }) {
+function BinCard({ bin, onSelect, selected, onConfigUpdate }) {
   const [showConfig, setShowConfig] = useState(false);
   const [mode, setMode] = useState(bin.mode);
   const [threshold, setThreshold] = useState(bin.threshold_cm);
@@ -19,12 +19,19 @@ function BinCard({ bin, onSelect, selected }) {
     setMessage(null);
 
     try {
-      await updateBinConfig(bin.bin_id, {
+      const response = await updateBinConfig(bin.bin_id, {
         mode,
         threshold_cm: parseInt(threshold)
       });
+      
       setMessage({ type: 'success', text: 'Configuration updated successfully!' });
       setShowConfig(false);
+      
+      // Gọi callback để cập nhật Dashboard ngay lập tức
+      if (onConfigUpdate && response.data) {
+        onConfigUpdate(bin.bin_id, response.data);
+      }
+      
       setTimeout(() => setMessage(null), 3000);
     } catch (error) {
       console.error('Config update error:', error);

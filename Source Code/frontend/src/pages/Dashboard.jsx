@@ -121,6 +121,24 @@ function Dashboard({ mqttConnected }) {
   };
 
   /**
+   * Handle config update from BinCard
+   */
+  const handleConfigUpdate = (binId, updatedBin) => {
+    setBins(prevBins =>
+      prevBins.map(bin => {
+        if (bin.bin_id === binId) {
+          return {
+            ...bin,
+            mode: updatedBin.mode,
+            threshold_cm: updatedBin.threshold_cm
+          };
+        }
+        return bin;
+      })
+    );
+  };
+
+  /**
    * Refresh data
    */
   const handleRefresh = () => {
@@ -173,6 +191,7 @@ function Dashboard({ mqttConnected }) {
                 bin={bin}
                 onSelect={() => handleBinSelect(bin.bin_id)}
                 selected={selectedBin === bin.bin_id}
+                onConfigUpdate={handleConfigUpdate}
               />
             ))}
           </div>
