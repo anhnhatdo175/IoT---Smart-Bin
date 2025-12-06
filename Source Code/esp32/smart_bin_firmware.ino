@@ -56,7 +56,7 @@ String TOPIC_STATUS = "smartbin/" + String(BIN_ID) + "/status";
 #define RFID_RST_PIN 22
 
 // Servo Motor
-#define SERVO_PIN 26
+#define SERVO_PIN 25  // Changed from 26 to 25 (more reliable)
 
 // LED Indicators (optional)
 #define LED_GREEN_PIN 2   // Built-in LED
@@ -79,6 +79,8 @@ unsigned long lidOpenTime = 0;
 const unsigned long LID_AUTO_CLOSE_MS = 5000;  // 5 seconds
 unsigned long lastTelemetryTime = 0;
 const unsigned long TELEMETRY_INTERVAL_MS = 10000;  // 10 seconds
+unsigned long lastProximityCheck = 0;
+const unsigned long PROXIMITY_DEBOUNCE_MS = 2000;  // 2 seconds debounce
 int currentLevelPercent = 0;
 int currentDistanceCm = 0;
 
@@ -123,9 +125,46 @@ void setup() {
   rfid.PCD_Init();
   Serial.println("✅ RFID initialized");
 
-  lidServo.attach(SERVO_PIN);
-  closeLid();  // Start with lid closed
-  Serial.println("✅ Servo initialized");
+  // ESP32Servo requires timer configuration
+  Serial.println("🔧 Configuring servo...");
+  
+  // Try simpler attach without manual timer allocation
+  Serial.print("   Attaching to pin " + String(SERVO_PIN) + "... ");
+  
+  // Method 1: Let library auto-allocate timer
+  int channel = lidServo.attach(SERVO_PIN);  // Auto-allocate
+  
+  if (channel >= 0) {
+    Serial.println("OK (channel " + String(channel) + ")");
+    Serial.println("✅ Servo attached successfully!");
+    delay(100);
+    
+    Serial.print("   Moving to 0° (closed)... ");
+    closeLid();
+    Serial.println("Done");
+    Serial.println("✅ Servo initialized at 0°");
+  } else {
+    Serial.println("FAILED!");
+    Serial.println("❌ Servo attach FAILED! Trying alternative method...");
+    
+    // Method 2: Manual timer with different configuration
+    ESP32PWM::allocateTimer(0);
+    lidServo.setPeriodHertz(50);
+    bool attachResult = lidServo.attach(SERVO_PIN, 500, 2400);
+    
+    if (attachResult) {
+      Serial.println("✅ Servo attached with manual config!");
+      delay(100);
+      closeLid();
+    } else {
+      Serial.println("❌ Both methods FAILED! Check:");
+      Serial.println("   - Pin " + String(SERVO_PIN) + " wiring");
+      Serial.println("   - Servo power (5V, 500mA+)");
+      Serial.println("   - ESP32Servo library version");
+      Serial.println("   - Try different GPIO (32, 33, 25)");
+      digitalWrite(LED_RED_PIN, HIGH);
+    }
+  }
 
   // Connect to WiFi
   setupWiFi();
@@ -151,12 +190,12 @@ void loop() {
   }
 
   // Check for proximity trigger (AUTO mode)
-  if (BIN_MODE == "AUTO" && !isLidOpen) {
+  if (BIN_MODE.equals("AUTO") && !isLidOpen) {
     checkProximity();
   }
 
   // Check for RFID scan (AUTH mode)
-  if (BIN_MODE == "AUTH" && !isLidOpen) {
+  if (BIN_MODE.equals("AUTH") && !isLidOpen) {
     checkRFID();
   }
 
@@ -335,6 +374,11 @@ void publishLevelData() {
 
 // ===== Check Proximity (AUTO Mode) =====
 void checkProximity() {
+  // Debounce: chỉ check sau 2s kể từ lần check trước
+  if (millis() - lastProximityCheck < PROXIMITY_DEBOUNCE_MS) {
+    return;
+  }
+
   long distance = measureDistance(PROX_TRIG_PIN, PROX_ECHO_PIN);
 
   if (distance > 0 && distance <= PROXIMITY_THRESHOLD_CM) {
@@ -342,6 +386,7 @@ void checkProximity() {
     Serial.print(distance);
     Serial.println(" cm");
     openLid("proximity_trigger");
+    lastProximityCheck = millis();  // Update debounce timer
   }
 }
 
@@ -404,23 +449,47 @@ void openLid(String reason) {
   Serial.print(reason);
   Serial.println(")");
 
-  lidServo.write(90);  // Open position (adjust as needed)
+  // Check if servo is attached, re-attach if needed
+  if (!lidServo.attached()) {
+    ESP32PWM::allocateTimer(0);
+    lidServo.setPeriodHertz(50);
+    lidServo.attach(SERVO_PIN, 500, 2400);
+    delay(50);
+  }
+
+  lidServo.write(120);  // Open position (120° for wider opening)
+  delay(600);  // Wait for servo to reach position + stabilize
+  
+  // Detach to stop PWM signal and prevent jitter/noise
+  lidServo.detach();
+  
   isLidOpen = true;
   lidOpenTime = millis();
-
   digitalWrite(LED_GREEN_PIN, HIGH);
+  Serial.println("   Servo moved to 120° (detached)");
 }
 
 // ===== Close Lid =====
 void closeLid() {
-  if (!isLidOpen) return;
-
   Serial.println("🚪 Closing lid");
 
-  lidServo.write(0);   // Close position (adjust as needed)
-  isLidOpen = false;
+  // Re-attach servo if needed
+  if (!lidServo.attached()) {
+    ESP32PWM::allocateTimer(0);
+    lidServo.setPeriodHertz(50);
+    lidServo.attach(SERVO_PIN, 500, 2400);
+    delay(50);
+  }
 
+  lidServo.write(0);   // Close position (0° for SG90)
+  delay(600);  // Wait for servo to reach position + stabilize
+  
+  // Detach to stop PWM signal and save power
+  lidServo.detach();
+  
+  isLidOpen = false;
   digitalWrite(LED_GREEN_PIN, LOW);
+  Serial.println("   Servo moved to 0° (detached)");
 }
 
 // ===== Handle Command =====
@@ -447,9 +516,16 @@ void handleConfig(JsonDocument& doc) {
 
   // Update mode
   if (doc.containsKey("mode")) {
-    BIN_MODE = doc["mode"].as<String>();
-    Serial.print("   Mode: ");
-    Serial.println(BIN_MODE);
+    String newMode = doc["mode"].as<String>();
+    // Validate mode
+    if (newMode.equals("AUTO") || newMode.equals("AUTH")) {
+      BIN_MODE = newMode;
+      Serial.print("   Mode: ");
+      Serial.println(BIN_MODE);
+    } else {
+      Serial.print("   ⚠️  Invalid mode: ");
+      Serial.println(newMode);
+    }
   }
 
   // Update threshold

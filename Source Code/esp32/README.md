@@ -47,7 +47,7 @@ MFRC522 RFID (SPI):
 SG90 Servo:
   VCC  → 5V
   GND  → GND
-  PWM  → GPIO 18
+  PWM  → GPIO 25
 
 LEDs (Optional):
   Green LED → GPIO 2 (built-in)
@@ -319,7 +319,7 @@ const unsigned long TELEMETRY_INTERVAL_MS = 10000;  // Publish interval
 | RFID MOSI | 23 | Fixed (VSPI) |
 | RFID MISO | 19 | Fixed (VSPI) |
 | RFID SCK | 18 | Fixed (VSPI) |
-| Servo PWM | 18 | Any GPIO (PWM capable) |
+| Servo PWM | 25 |  |
 
 ## 🆘 Common Error Codes
 
