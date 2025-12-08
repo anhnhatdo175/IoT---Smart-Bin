@@ -15,6 +15,7 @@
  * - AUTH mode: RFID-based access control
  * - Real-time level monitoring
  * - Remote configuration via MQTT
+ * - OTA (Over-The-Air) firmware update
  */
 
 #include <WiFi.h>
@@ -23,10 +24,11 @@
 #include <SPI.h>
 #include <MFRC522.h>
 #include <ESP32Servo.h>
+#include <ArduinoOTA.h>  // OTA Update library
 
 // ===== WiFi Configuration =====
-const char* WIFI_SSID = "realme";         // Change this
-const char* WIFI_PASSWORD = "12345678"; // Change this
+const char* WIFI_SSID = "realme";         
+const char* WIFI_PASSWORD = "12345678"; 
 
 // ===== MQTT Configuration =====
 const char* MQTT_BROKER = "broker.hivemq.com";  // Public HiveMQ broker
@@ -56,7 +58,7 @@ String TOPIC_STATUS = "smartbin/" + String(BIN_ID) + "/status";
 #define RFID_RST_PIN 22
 
 // Servo Motor
-#define SERVO_PIN 25  
+#define SERVO_PIN 25  // Changed from 26 to 25 (more reliable)
 
 // LED Indicators (optional)
 #define LED_GREEN_PIN 2   // Built-in LED
@@ -76,7 +78,7 @@ Servo lidServo;
 // ===== State Variables =====
 bool isLidOpen = false;
 unsigned long lidOpenTime = 0;
-const unsigned long LID_AUTO_CLOSE_MS = 7000;  // 5 seconds
+const unsigned long LID_AUTO_CLOSE_MS = 7000;  // 7 seconds
 unsigned long lastTelemetryTime = 0;
 const unsigned long TELEMETRY_INTERVAL_MS = 10000;  // 10 seconds
 unsigned long lastProximityCheck = 0;
@@ -169,14 +171,22 @@ void setup() {
   // Connect to WiFi
   setupWiFi();
 
+  // Setup OTA (Over-The-Air Update)
+  setupOTA();
+
   // Setup MQTT
   setupMQTT();
 
   Serial.println("\n✨ Setup complete! Starting main loop...\n");
+  
+
 }
 
 // ===== Main Loop =====
 void loop() {
+  // Handle OTA updates
+  ArduinoOTA.handle();
+  
   // Maintain MQTT connection
   if (!mqttClient.connected()) {
     reconnectMQTT();
@@ -206,6 +216,97 @@ void loop() {
   }
 
   delay(100);  // Small delay to prevent CPU overload
+}
+
+// ===== OTA Setup =====
+void setupOTA() {
+  Serial.println("🔧 Configuring OTA update...");
+  
+  // Hostname for OTA (will appear as "SmartBin-BIN01" in Arduino IDE)
+  ArduinoOTA.setHostname(BIN_ID);
+  
+  // Password protection (optional but recommended)
+  ArduinoOTA.setPassword("smartbin123");
+  
+  // Port (default 3232)
+  ArduinoOTA.setPort(3232);
+  
+  // Callback when OTA starts
+  ArduinoOTA.onStart([]() {
+    String type;
+    if (ArduinoOTA.getCommand() == U_FLASH) {
+      type = "sketch";
+    } else { // U_SPIFFS
+      type = "filesystem";
+    }
+    
+    Serial.println("\n🔄 OTA Update Starting...");
+    Serial.println("   Type: " + type);
+    
+    // Đóng nắp an toàn trước khi update
+    if (isLidOpen) {
+      closeLid();
+    }
+    
+    // Detach servo để tránh nhiễu
+    if (lidServo.attached()) {
+      lidServo.detach();
+    }
+  });
+  
+  // Callback when OTA ends
+  ArduinoOTA.onEnd([]() {
+    Serial.println("\n✅ OTA Update Complete!");
+    Serial.println("   Rebooting...");
+  });
+  
+  // Callback for progress
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    static unsigned int lastPercent = 0;
+    unsigned int percent = (progress / (total / 100));
+    
+    // Chỉ in khi thay đổi 10%
+    if (percent >= lastPercent + 10) {
+      Serial.printf("   Progress: %u%%\n", percent);
+      lastPercent = percent;
+      
+      // Nhấp nháy LED để báo hiệu
+      digitalWrite(LED_GREEN_PIN, !digitalRead(LED_GREEN_PIN));
+    }
+  });
+  
+  // Callback for errors
+  ArduinoOTA.onError([](ota_error_t error) {
+    Serial.printf("\n❌ OTA Error[%u]: ", error);
+    
+    if (error == OTA_AUTH_ERROR) {
+      Serial.println("Auth Failed");
+    } else if (error == OTA_BEGIN_ERROR) {
+      Serial.println("Begin Failed");
+    } else if (error == OTA_CONNECT_ERROR) {
+      Serial.println("Connect Failed");
+    } else if (error == OTA_RECEIVE_ERROR) {
+      Serial.println("Receive Failed");
+    } else if (error == OTA_END_ERROR) {
+      Serial.println("End Failed");
+    }
+    
+    // Báo lỗi bằng LED đỏ
+    digitalWrite(LED_RED_PIN, HIGH);
+    delay(3000);
+    digitalWrite(LED_RED_PIN, LOW);
+  });
+  
+  // Start OTA service
+  ArduinoOTA.begin();
+  
+  Serial.println("✅ OTA Ready!");
+  Serial.print("   Hostname: ");
+  Serial.println(BIN_ID);
+  Serial.println("   Password: smartbin123");
+  Serial.print("   IP Address: ");
+  Serial.println(WiFi.localIP());
+  Serial.println();
 }
 
 // ===== WiFi Setup =====
