@@ -56,14 +56,14 @@ String TOPIC_STATUS = "smartbin/" + String(BIN_ID) + "/status";
 #define RFID_RST_PIN 22
 
 // Servo Motor
-#define SERVO_PIN 25  // Changed from 26 to 25 (more reliable)
+#define SERVO_PIN 25  
 
 // LED Indicators (optional)
 #define LED_GREEN_PIN 2   // Built-in LED
 #define LED_RED_PIN 4
 
 // ===== Bin Configuration =====
-const int BIN_HEIGHT_CM = 200;         // Total bin height
+const int BIN_HEIGHT_CM = 30;         // Total bin height
 int PROXIMITY_THRESHOLD_CM = 50;       // Distance to trigger lid
 String BIN_MODE = "AUTO";              // AUTO or AUTH
 
@@ -76,7 +76,7 @@ Servo lidServo;
 // ===== State Variables =====
 bool isLidOpen = false;
 unsigned long lidOpenTime = 0;
-const unsigned long LID_AUTO_CLOSE_MS = 5000;  // 5 seconds
+const unsigned long LID_AUTO_CLOSE_MS = 7000;  // 5 seconds
 unsigned long lastTelemetryTime = 0;
 const unsigned long TELEMETRY_INTERVAL_MS = 10000;  // 10 seconds
 unsigned long lastProximityCheck = 0;
