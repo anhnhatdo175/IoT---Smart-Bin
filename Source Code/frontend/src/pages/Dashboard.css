@@ -26,6 +26,12 @@
   font-weight: 600;
 }
 
+.header-buttons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .dashboard-header {
@@ -34,7 +40,11 @@
     gap: 15px;
   }
 
-  .dashboard-header button {
+  .header-buttons {
+    width: 100%;
+  }
+
+  .header-buttons button {
     width: 100%;
   }
 }

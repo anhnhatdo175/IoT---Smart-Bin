@@ -173,9 +173,17 @@ function Dashboard({ mqttConnected }) {
 
       <div className="dashboard-header">
         <h2>Bin Overview</h2>
-        <button onClick={handleRefresh} className="btn btn-secondary">
-          🔄 Refresh
-        </button>
+        <div className="header-buttons">
+          <button onClick={handleRefresh} className="btn btn-secondary">
+            🔄 Refresh
+          </button>
+          <button 
+            onClick={() => window.open('http://192.168.210.149/update', '_blank')}
+            className="btn btn-secondary"
+          >
+            🔧 Update Firmware
+          </button>
+        </div>
       </div>
 
       {bins.length === 0 ? (

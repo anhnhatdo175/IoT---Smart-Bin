@@ -65,7 +65,7 @@ function App() {
 
       <footer className="app-footer">
         <div className="container">
-          <p>Smart Bin IoT System © 2025 | IOT BTL Project - K67 HUST</p>
+          <p>Smart Bin IoT System © 2025 </p>
         </div>
       </footer>
     </div>
